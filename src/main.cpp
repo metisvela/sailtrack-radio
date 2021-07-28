@@ -2,7 +2,7 @@
 
 #include "SailtrackModule.h"
 
-SailtrackModule radio_module;
+// SailtrackModule radio_module;
 
 #include "SparkFun_u-blox_GNSS_Arduino_Library.h" //http://librarymanager/All#SparkFun_u-blox_GNSS
 
@@ -16,9 +16,11 @@ SailtrackModule radio_module;
 SFE_UBLOX_GNSS myGNSS;
 
 
-void printPVTdata(UBX_NAV_PVT_data_t ubxDataStruct)
+void publishData(UBX_NAV_PVT_data_t ubxDataStruct)
 {
-	DynamicJsonDocument payload(JSON_OBJECT_SIZE(10));
+	DynamicJsonDocument payload(300);
+
+	Serial.println("sending message...");
 
 	payload["latitude"] = ubxDataStruct.lat;
 	payload["longitude"] = ubxDataStruct.lon;
@@ -29,14 +31,14 @@ void printPVTdata(UBX_NAV_PVT_data_t ubxDataStruct)
 	payload["sacc"] = ubxDataStruct.sAcc;
 	payload["headacc"] = ubxDataStruct.headAcc;
 
-	radio_module.publish("sensor/gps0", "gps0", payload);
+	STModule.publish("sensor/gps0", "gps0", payload);
 
-	Serial.println("sent message...");
+	Serial.println("sent!");
 }
 
 void setup()
 {
-	radio_module.init("radio", IPAddress(192, 168, 42, 101));
+	STModule.init("radio", IPAddress(192, 168, 42, 101));
 
 	Serial.begin(115200);
 
@@ -49,15 +51,15 @@ void setup()
 
 	myGNSS.setUART1Output(COM_TYPE_UBX); //Set the UART port to output UBX only
 
-	myGNSS.setMeasurementRate(100);
+	myGNSS.setMeasurementRate(200);
 	// myGNSS.setNavigationRate(5);
 
-	myGNSS.setAutoPVTcallback(&printPVTdata); // Enable automatic NAV PVT messages with callback to printPVTdata
+	myGNSS.setAutoPVTcallback(&publishData); // Enable automatic NAV PVT messages with callback to printPVTdata
 }
 
 void loop()
 {
-	radio_module.loop();
+	STModule.loop();
 	myGNSS.checkUblox();	 // Check for the arrival of new data and process it.
 	myGNSS.checkCallbacks(); // Check if any callbacks are waiting to be processed.
 
