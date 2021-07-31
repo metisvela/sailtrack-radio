@@ -1,27 +1,41 @@
 #include <Arduino.h>
-
+#include <ArduinoJson.h>
+#include <axp20x.h>
+#include "SparkFun_u-blox_GNSS_Arduino_Library.h"
 #include "SailtrackModule.h"
 
-// SailtrackModule radio_module;
-
-#include "SparkFun_u-blox_GNSS_Arduino_Library.h" //http://librarymanager/All#SparkFun_u-blox_GNSS
+#define I2C_SDA 21
+#define I2C_SCL 22
 
 #define GPS_RX_PIN 34
 #define GPS_TX_PIN 12
 #define GPS_BAND_RATE 9600
 
-#define BUTTON_PIN 38
-#define BUTTON_PIN_MASK GPIO_SEL_38
+SFE_UBLOX_GNSS GPS;
+AXP20X_Class PMU;
 
-SFE_UBLOX_GNSS myGNSS;
+class ModuleCallbacks: public SailtrackModuleCallbacks {
+	void onWifiConnectionBegin() {
+		// TODO: Notify user
+	}
+	
+	void onWifiConnectionResult(wl_status_t status) {
+		// TODO: Notify user
+	}
 
+	DynamicJsonDocument getStatus() {
+		DynamicJsonDocument payload(300);
+		JsonObject battery = payload.createNestedObject("battery");
+		JsonObject cpu = payload.createNestedObject("cpu");
+		battery["voltage"] = PMU.getBattVoltage() / 1000;
+		battery["charging"] = PMU.isChargeing();
+		cpu["temperature"] = temperatureRead();
+		return payload;
+	}
+};
 
-void publishData(UBX_NAV_PVT_data_t ubxDataStruct)
-{
+void onGPSData(UBX_NAV_PVT_data_t ubxDataStruct) {
 	DynamicJsonDocument payload(300);
-
-	Serial.println("sending message...");
-
 	payload["latitude"] = ubxDataStruct.lat;
 	payload["longitude"] = ubxDataStruct.lon;
 	payload["speed"] = ubxDataStruct.gSpeed;
@@ -30,39 +44,45 @@ void publishData(UBX_NAV_PVT_data_t ubxDataStruct)
 	payload["hacc"] = ubxDataStruct.hAcc;
 	payload["sacc"] = ubxDataStruct.sAcc;
 	payload["headacc"] = ubxDataStruct.headAcc;
-
 	STModule.publish("sensor/gps0", "gps0", payload);
-
-	Serial.println("sent!");
 }
 
-void setup()
-{
-	STModule.init("radio", IPAddress(192, 168, 42, 101));
+void beginPMU() {
+	Wire.begin(I2C_SDA, I2C_SCL);
+	PMU.begin(Wire, AXP192_SLAVE_ADDRESS);
+	PMU.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);
+    PMU.setPowerOutPut(AXP192_LDO2, AXP202_OFF);
+    PMU.setPowerOutPut(AXP192_LDO3, AXP202_OFF);
+    PMU.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);
+	PMU.setLDO2Voltage(3300);
+	PMU.setLDO3Voltage(3300);
+	PMU.setPowerOutPut(AXP192_LDO2, AXP202_ON);
+    PMU.setPowerOutPut(AXP192_LDO3, AXP202_ON);
+}
 
-	Serial.begin(115200);
-
+void beginGPS() {
 	Serial1.begin(GPS_BAND_RATE, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-	while (myGNSS.begin(Serial1) == false)
-	{
-		Serial.println(F("."));
-		delay(100);
-	}
-
-	myGNSS.setUART1Output(COM_TYPE_UBX); //Set the UART port to output UBX only
-
-	myGNSS.setMeasurementRate(200);
-	// myGNSS.setNavigationRate(5);
-
-	myGNSS.setAutoPVTcallback(&publishData); // Enable automatic NAV PVT messages with callback to printPVTdata
+	GPS.begin(Serial1);
+	GPS.setUART1Output(COM_TYPE_UBX);
+	GPS.setMeasurementRate(200);
+	GPS.setAutoPVTcallback(&onGPSData);
 }
 
-void loop()
-{
-	STModule.loop();
-	myGNSS.checkUblox();	 // Check for the arrival of new data and process it.
-	myGNSS.checkCallbacks(); // Check if any callbacks are waiting to be processed.
+void beginLora() {
+	// TODO: Init LoRa
+}
 
-	// Serial.print(".");
+void setup() {
+	beginPMU();
+	STModule.begin("radio", "sailtrack-radio", IPAddress(192, 168, 42, 101));
+	STModule.setCallbacks(new ModuleCallbacks());
+	beginGPS();
+	beginLora();
+}
+
+void loop() {
+	STModule.loop();
+	GPS.checkUblox();
+	GPS.checkCallbacks();
 	delay(50);
 }
