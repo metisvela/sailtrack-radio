@@ -54,13 +54,11 @@ void beginPMU() {
     PMU.setPowerOutPut(AXP192_LDO2, AXP202_OFF);
     PMU.setPowerOutPut(AXP192_LDO3, AXP202_OFF);
     PMU.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);
-	PMU.setLDO2Voltage(3300);
-	PMU.setLDO3Voltage(3300);
-	PMU.setPowerOutPut(AXP192_LDO2, AXP202_ON);
-    PMU.setPowerOutPut(AXP192_LDO3, AXP202_ON);
 }
 
 void beginGPS() {
+	PMU.setLDO3Voltage(3300);
+	PMU.setPowerOutPut(AXP192_LDO3, AXP202_ON);
 	Serial1.begin(GPS_BAND_RATE, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
 	GPS.begin(Serial1);
 	GPS.setUART1Output(COM_TYPE_UBX);
@@ -69,6 +67,8 @@ void beginGPS() {
 }
 
 void beginLora() {
+	PMU.setLDO2Voltage(3300);
+	PMU.setPowerOutPut(AXP192_LDO2, AXP202_ON);
 	// TODO: Init LoRa
 }
 
@@ -77,7 +77,7 @@ void setup() {
 	STModule.begin("radio", "sailtrack-radio", IPAddress(192, 168, 42, 101));
 	STModule.setCallbacks(new ModuleCallbacks());
 	beginGPS();
-	beginLora();
+	//beginLora();
 }
 
 void loop() {
