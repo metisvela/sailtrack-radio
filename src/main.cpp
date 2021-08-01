@@ -81,7 +81,6 @@ void setup() {
 }
 
 void loop() {
-	STModule.loop();
 	GPS.checkUblox();
 	GPS.checkCallbacks();
 	delay(50);
