@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <axp20x.h>
-#include "SparkFun_u-blox_GNSS_Arduino_Library.h"
-#include "SailtrackModule.h"
+#include <SparkFun_u-blox_GNSS_Arduino_Library.h>
+#include <SailtrackModule.h>
 
 #define I2C_SDA 21
 #define I2C_SCL 22
