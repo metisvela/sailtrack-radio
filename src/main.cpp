@@ -13,6 +13,7 @@
 
 SFE_UBLOX_GNSS GPS;
 AXP20X_Class PMU;
+SailtrackModule STM;
 
 class ModuleCallbacks: public SailtrackModuleCallbacks {
 	void onWifiConnectionBegin() {
@@ -44,7 +45,7 @@ void onGPSData(UBX_NAV_PVT_data_t ubxDataStruct) {
 	payload["hacc"] = ubxDataStruct.hAcc;
 	payload["sacc"] = ubxDataStruct.sAcc;
 	payload["headacc"] = ubxDataStruct.headAcc;
-	STModule.publish("sensor/gps0", "gps0", payload);
+	STM.publish("sensor/gps0", payload);
 }
 
 void beginPMU() {
@@ -74,8 +75,8 @@ void beginLora() {
 
 void setup() {
 	beginPMU();
-	STModule.begin("radio", "sailtrack-radio", IPAddress(192, 168, 42, 101));
-	STModule.setCallbacks(new ModuleCallbacks());
+	STM.setCallbacks(new ModuleCallbacks());
+	STM.begin("radio", IPAddress(192, 168, 42, 101));
 	beginGPS();
 	//beginLora();
 }
