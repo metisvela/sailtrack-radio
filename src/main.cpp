@@ -16,18 +16,11 @@ AXP20X_Class PMU;
 SailtrackModule STM;
 
 class ModuleCallbacks: public SailtrackModuleCallbacks {
-	void onWifiConnectionBegin() {
-		// TODO: Notify user
-	}
 	
-	void onWifiConnectionResult(wl_status_t status) {
-		// TODO: Notify user
-	}
-
-	DynamicJsonDocument getStatus() {
-		DynamicJsonDocument payload(300);
-		JsonObject battery = payload.createNestedObject("battery");
-		JsonObject cpu = payload.createNestedObject("cpu");
+	DynamicJsonDocument * getStatus() {
+		DynamicJsonDocument * payload =  new DynamicJsonDocument(300);
+		JsonObject battery = payload->createNestedObject("battery");
+		JsonObject cpu = payload->createNestedObject("cpu");
 		battery["voltage"] = PMU.getBattVoltage() / 1000;
 		battery["charging"] = PMU.isChargeing();
 		cpu["temperature"] = temperatureRead();
@@ -45,7 +38,7 @@ void onGPSData(UBX_NAV_PVT_data_t ubxDataStruct) {
 	payload["hacc"] = ubxDataStruct.hAcc;
 	payload["sacc"] = ubxDataStruct.sAcc;
 	payload["headacc"] = ubxDataStruct.headAcc;
-	STM.publish("sensor/gps0", payload);
+	STM.publish("sensor/gps0", &payload);
 }
 
 void beginPMU() {
@@ -75,8 +68,8 @@ void beginLora() {
 
 void setup() {
 	beginPMU();
-	STM.setCallbacks(new ModuleCallbacks());
-	STM.begin("radio", IPAddress(192, 168, 42, 101));
+	STM.setNotificationLed(4,true);
+	STM.begin("radio", IPAddress(192, 168, 42, 101), new ModuleCallbacks());
 	beginGPS();
 	//beginLora();
 }
