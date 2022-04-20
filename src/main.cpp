@@ -30,17 +30,23 @@
 
 #define MQTT_DATA_PUBLISH_RATE_HZ 1
 #define MQTT_LOG_PUBLISH_RATE_HZ 0.1
-#define LORA_SEND_RATE_HZ 0.7
+#define LORA_SEND_RATE_HZ 1
 
 static const char * LOG_TAG = "SAILTRACK_RADIO";
 
-struct LoraObject {
-	char content[500];
+struct LoraMetric {
+	char value[20];
 	char topic[20];
 	char name[20];
-} loraObjects[] = {
-	{ "{}", "sensor/gps0", "" },
-	{ "{}", "sensor/imu0", "orientation" }
+} loraMetrics[] = {
+	{ "0", "sensor/gps0", "latitude" },
+	{ "0", "sensor/gps0", "longitude" },
+	{ "0", "sensor/gps0", "speed" },
+	{ "0", "sensor/gps0", "heading" },
+	{ "0", "sensor/gps0", "fix" },
+	{ "0", "sensor/imu0", "orientation.heading"},
+	{ "0", "sensor/imu0", "orientation.pitch" },
+	{ "0", "sensor/imu0", "orientation.roll" }
 };
 
 SFE_UBLOX_GNSS gps;
@@ -63,14 +69,21 @@ class ModuleCallbacks: public SailtrackModuleCallbacks {
 	}
 
 	void onMqttMessage(const char * topic, const char * message) {
-		for (int i = 0; i < sizeof(loraObjects)/sizeof(*loraObjects); i++) {
-			LoraObject & object = loraObjects[i];
-			if (!strcmp(topic, object.topic)) {
-				if (strlen(object.name)) {
-					DynamicJsonDocument payload(500);
-					deserializeJson(payload, message);
-					serializeJson(payload[object.name], object.content);
-				} else strcpy(object.content, message);
+		for (int i = 0; i < sizeof(loraMetrics)/sizeof(*loraMetrics); i++) {
+			LoraMetric & metric = loraMetrics[i];
+			if (!strcmp(topic, metric.topic)) {
+				DynamicJsonDocument payload(500);
+				deserializeJson(payload, message);
+				char metricName[strlen(metric.name)+1];
+                strcpy(metricName, metric.name);
+                char * token = strtok(metricName, ".");
+                JsonVariant tmpVal = payload.as<JsonVariant>();
+				while (token != NULL) {
+                    if (!tmpVal.containsKey(token)) return;
+                    tmpVal = tmpVal[token];
+                    token = strtok(NULL, ".");
+                }
+				serializeJson(tmpVal, metric.value);
 			}
 		}
 	}
@@ -89,18 +102,22 @@ void onGPSData(UBX_NAV_PVT_data_t ubxDataStruct) {
 void loraTask(void * pvArguments) {
 	TickType_t lastWakeTime = xTaskGetTickCount();
 	while (true) {
-		for (auto object : loraObjects) {
-			char message[500];
-			sprintf(message, "%s%s\n", object.topic, object.content);
-			uint8_t packet[64];
-			size_t len;
-			size_t consumed = 0;
-			size_t toConsume = strlen(message);
-			while (consumed < toConsume) {
-				consumed += e32.encode(E32_ADDRESS, message + consumed, packet, &len);
-				lora.transmit(packet, len);
-				loraSentBytes += len;
-			}
+		char message[500];
+		strcpy(message, loraMetrics[0].value);
+		for (int i = 1; i < sizeof(loraMetrics)/sizeof(*loraMetrics); i++) {
+			strcat(message, " ");
+			strcat(message, loraMetrics[i].value);
+		}
+		strcat(message, "\n");
+
+		uint8_t packet[64];
+		size_t len;
+		size_t consumed = 0;
+		size_t toConsume = strlen(message);
+		while (consumed < toConsume) {
+			consumed += e32.encode(E32_ADDRESS, message + consumed, packet, &len);
+			lora.transmit(packet, len);
+			loraSentBytes += len;
 		}
 		vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000 / LORA_SEND_RATE_HZ));
 	}
@@ -159,8 +176,8 @@ void setup() {
 	beginGPS();
 	beginLora();
 	beginLogging();
-	for (auto object : loraObjects)
-		stm.subscribe(object.topic);
+	for (auto metric : loraMetrics)
+		stm.subscribe(metric.topic);
 }
 
 TickType_t lastWakeTime = xTaskGetTickCount();
