@@ -3,18 +3,22 @@
 #include <RadioLib.h>
 #include <E32-868T20D.h>
 
-#define LORA_CS_PIN 18
-#define LORA_DIO1_PIN 33
-#define LORA_RST_PIN 23
-#define LORA_BUSY_PIN 32
+// -------------------------- Configuration -------------------------- //
+
+#define LORA_CS_PIN                 18
+#define LORA_DIO1_PIN               33
+#define LORA_RST_PIN                23
+#define LORA_BUSY_PIN               32
 
 // EBYTE E32-868T20D parameters
-#define E32_CHANNEL 0x09
-#define E32_ADDRESS 0x1310
-#define E32_BASE_FREQUENCY_MHZ 862
-#define E32_BANDWIDTH_KHZ 500
-#define E32_SPREADING_FACTOR 11
-#define E32_CODING_RATE_DENOM 5
+#define E32_CHANNEL                 0x09
+#define E32_ADDRESS                 0x1310
+#define E32_BASE_FREQUENCY_MHZ      862
+#define E32_BANDWIDTH_KHZ           500
+#define E32_SPREADING_FACTOR        11
+#define E32_CODING_RATE_DENOM       5
+
+// ------------------------------------------------------------------- //
 
 AXP20X_Class pmu;
 SX1262 lora = new Module(LORA_CS_PIN, LORA_DIO1_PIN, LORA_RST_PIN, LORA_BUSY_PIN);
