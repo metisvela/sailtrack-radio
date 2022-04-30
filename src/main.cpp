@@ -31,20 +31,20 @@
 #define E32_SPREADING_FACTOR 		11
 #define E32_CODING_RATE_DENOM 		5
 
-#define LOOP_TASK_DELAY_MS 			1000 / (2 * GPS_NAVIGATION_FREQ_HZ)
-#define LORA_TASK_DELAY_MS			1000 / LORA_SEND_FREQ_HZ
+#define LOOP_TASK_INTERVAL_MS 		1000 / (2 * GPS_NAVIGATION_FREQ_HZ)
+#define LORA_TASK_INTERVAL_MS		1000 / LORA_SEND_FREQ_HZ
 
 struct LoraMetric {
 	char value[32];
 	char topic[32];
 	char name[32];
 } loraMetrics[] = {
+	{ "0", "sensor/gps0", "fixType" },
 	{ "0", "sensor/gps0", "epoch" },
-	{ "0", "sensor/gps0", "latitude" },
-	{ "0", "sensor/gps0", "longitude" },
-	{ "0", "sensor/gps0", "speed" },
-	{ "0", "sensor/gps0", "heading" },
-	{ "0", "sensor/gps0", "fix" },
+	{ "0", "sensor/gps0", "lon" },
+	{ "0", "sensor/gps0", "lat" },
+	{ "0", "sensor/gps0", "gSpeed" },
+	{ "0", "sensor/gps0", "headMot" },
 	{ "0", "sensor/imu0", "orientation.heading"},
 	{ "0", "sensor/imu0", "orientation.pitch" },
 	{ "0", "sensor/imu0", "orientation.roll" }
@@ -108,7 +108,7 @@ void loraTask(void * pvArguments) {
 			lora.transmit(packet, len);
 			loraSentBytes += len;
 		}
-		vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(LORA_TASK_DELAY_MS));
+		vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(LORA_TASK_INTERVAL_MS));
 	}
 }
 
@@ -152,13 +152,21 @@ void loop() {
 	TickType_t lastWakeTime = xTaskGetTickCount();
 	if (gps.getPVT() && gps.getTimeValid()) {
 		StaticJsonDocument<STM_JSON_DOCUMENT_MEDIUM_SIZE> doc;
-		doc["epoch"] = gps.getUnixEpoch();
-		doc["latitude"] = gps.getLatitude();
-		doc["longitude"] = gps.getLongitude();
-		doc["speed"] = gps.getGroundSpeed();
-		doc["heading"] = gps.getHeading();
-		doc["fix"] = gps.getFixType();
+		doc["fixType"] = gps.getFixType(); 			// GNSSfix Type: 0 = no fix, 1 = dead reckoning only, 2 = 2D-fix, 3 = 3D-fix
+		doc["epoch"] = gps.getUnixEpoch();			// Get the current Unix epoch time rounded to the nearest second	
+		doc["lon"] = gps.getLongitude();			// Longitude: deg * 1e-7
+		doc["lat"] = gps.getLatitude();				// Latitude: deg * 1e-7
+		doc["hMSL"] = gps.getAltitudeMSL();			// Height above mean sea level: mm
+		doc["hAcc"] = gps.getHorizontalAccEst();	// Horizontal accuracy estimate: mm
+		doc["vAcc"] = gps.getVerticalAccEst();		// Vertical accuracy estimate: mm
+		doc["velN"] = gps.getNedNorthVel();			// NED north velocity: mm/s
+		doc["velE"] = gps.getNedEastVel();			// NED east velocity: mm/s
+		doc["velD"] = gps.getNedDownVel();			// NED down velocity: mm/s
+		doc["gSpeed"] = gps.getGroundSpeed();		// Ground Speed (2-D): mm/s
+		doc["headMot"] = gps.getHeading();			// Heading of motion (2-D): deg * 1e-5
+		doc["sAcc"] = gps.getSpeedAccEst();			// Speed accuracy estimate: mm/s
+		doc["headAcc"] = gps.getHeadingAccEst();	// Heading accuracy estimate (both motion and vehicle): deg * 1e-5
 		stm.publish("sensor/gps0", doc.as<JsonObjectConst>());
 	}
-	vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(LOOP_TASK_DELAY_MS));
+	vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(LOOP_TASK_INTERVAL_MS));
 }
