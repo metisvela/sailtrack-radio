@@ -45,9 +45,9 @@ struct LoraMetric {
 	{ "0", "sensor/gps0", "lat" },
 	{ "0", "sensor/gps0", "gSpeed" },
 	{ "0", "sensor/gps0", "headMot" },
-	{ "0", "sensor/imu0", "orientation.heading"},
-	{ "0", "sensor/imu0", "orientation.pitch" },
-	{ "0", "sensor/imu0", "orientation.roll" }
+	{ "0", "sensor/imu0", "euler.x"},
+	{ "0", "sensor/imu0", "euler.y" },
+	{ "0", "sensor/imu0", "euler.z" }
 };
 
 // ------------------------------------------------------------------- //
@@ -77,12 +77,12 @@ class ModuleCallbacks: public SailtrackModuleCallbacks {
                 strcpy(metricName, metric.name);
                 char * token = strtok(metricName, ".");
                 JsonVariantConst tmpVal = message;
-				while (token != NULL) {
-                    if (!tmpVal.containsKey(token)) return;
+				while (token) {
+                    if (!tmpVal.containsKey(token)) break;
                     tmpVal = tmpVal[token];
                     token = strtok(NULL, ".");
                 }
-				serializeJson(tmpVal, metric.value);
+				if (!token) serializeJson(tmpVal, metric.value);
 			}
 		}
 	}
