@@ -43,11 +43,11 @@ struct LoraMetric {
 	{ "0", "sensor/gps0", "epoch" },
 	{ "0", "sensor/gps0", "lon" },
 	{ "0", "sensor/gps0", "lat" },
-	{ "0", "sensor/gps0", "gSpeed" },
-	{ "0", "sensor/gps0", "headMot" },
-	{ "0", "sensor/imu0", "euler.x"},
-	{ "0", "sensor/imu0", "euler.y" },
-	{ "0", "sensor/imu0", "euler.z" }
+	{ "0", "metric/boat", "sog" },
+	{ "0", "metric/boat", "cog" },
+	{ "0", "metric/boat", "heading"},
+	{ "0", "metric/boat", "pitch" },
+	{ "0", "metric/boat", "roll" }
 };
 
 // ------------------------------------------------------------------- //
