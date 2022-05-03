@@ -93,9 +93,11 @@ void loraTask(void * pvArguments) {
 	while (true) {
 		char message[LORA_MESSAGE_BUFFER_SIZE];
 		strcpy(message, loraMetrics[0].value);
+		strcpy(loraMetrics[0].value, "0");
 		for (int i = 1; i < sizeof(loraMetrics)/sizeof(*loraMetrics); i++) {
 			strcat(message, " ");
 			strcat(message, loraMetrics[i].value);
+			strcpy(loraMetrics[i].value, "0");
 		}
 		strcat(message, "\n");
 
