@@ -39,7 +39,6 @@ struct LoraMetric {
 	char topic[32];
 	char name[32];
 } loraMetrics[] = {
-	{ "0", "sensor/gps0", "fixType" },
 	{ "0", "sensor/gps0", "epoch" },
 	{ "0", "sensor/gps0", "lon" },
 	{ "0", "sensor/gps0", "lat" },
