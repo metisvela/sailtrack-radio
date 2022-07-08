@@ -29,7 +29,7 @@ pio run
 
  
  ## Usage
-Once the firmware is uploaded the sensor can work with the SailTrack system. When SailTrack Radio is turned on, a led start to blink to notify the user about the connection status with SailTrack Core, then if the connection is successful the LED stays on for, if the connection fails  the sensor will put itself to sleep, and it will try to connect later.
+Once the firmware is uploaded the sensor can work with the SailTrack system. When SailTrack Radio is turned on, a LED start to blink to notify the user about the connection status with SailTrack Core, then if the connection is successful the LED stays on for, if the connection fails  the sensor will put itself to sleep, and it will try to connect later.
 
 ## Contributing
 
