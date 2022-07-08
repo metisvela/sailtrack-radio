@@ -10,7 +10,7 @@
 
 # SailTrack Radio
 
-SailTrack Radio is a component of the SailTrack system, it manages gps data and sends message from the SailTrack system to SailTrack Ground. To learn more about the SailTrack project, please visit the [documentation repository](https://github.com/metis-vela-unipd/sailtrack-docs), 
+SailTrack Radio is a component of the SailTrack system, it manages GPS data and sends message from the SailTrack system to SailTrack Ground. To learn more about the SailTrack project, please visit the [documentation repository](https://github.com/metis-vela-unipd/sailtrack-docs), 
 
 The SailTrack Radio module is based on a battery powered LilyGo TTGO T-Beam connected to an external GPS antenna and an external LoRa antenna. For a more detailed hardware description of the module, please refer to the [Bill Of Materials](https://github.com/metis-vela-unipd/sailtrack-radio/blob/main/hardware/BOM.csv).
 
@@ -20,9 +20,17 @@ The SailTrack Radio module is based on a battery powered LilyGo TTGO T-Beam conn
 </p>
 
 ## Installation
- 1. Download and install [PlatformIO Core](https://docs.platformio.org/en/latest/core/index.html).  
- 2. Clone the [SailTrack Radio](https://github.com/metis-vela-unipd/sailtrack-radio) repository.
- 3. Flash the firmware with the following command line.
+ 1. [Install PlatformIO Core] (https://docs.platformio.org/en/latest/core/installation/index.html).  
+ 2. Clone the SailTrack Radio repository:
+```bash
+git clone https://github.com/metis-vela-unipd/sailtrack-radio.git 
+``` 
+ 3. Cd into the directory:
+ ```bash
+cd sailtrack-radio 
+```
+ 4. Connect the microcontroller, with an USB cable
+ 5. Finally, flash the firmware: .
 ```bash
 pio run 
 ```
