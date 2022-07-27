@@ -58,6 +58,8 @@ SX1262 lora = new Module(LORA_CS_PIN, LORA_DIO1_PIN, LORA_RST_PIN, LORA_BUSY_PIN
 E32_868T20D e32;
 
 size_t loraSentBytes = 0;
+int fixTimeStart = 0;
+int fixTime = 0;
 
 class ModuleCallbacks: public SailtrackModuleCallbacks {
 	void onStatusPublish(JsonObject status) {
@@ -132,6 +134,7 @@ void beginGPS() {
 	gps.setDynamicModel(DYN_MODEL_SEA);
 	gps.setNavigationFrequency(GPS_NAVIGATION_FREQ_HZ);
 	gps.setAutoPVT(true);
+	fixTimeStart = millis();
 }
 
 void beginLora() {
@@ -142,17 +145,27 @@ void beginLora() {
 	xTaskCreate(loraTask, "loraTask", STM_TASK_MEDIUM_STACK_SIZE, NULL, STM_TASK_MEDIUM_PRIORITY, NULL);
 }
 
+void beginAssistNow(){
+	gps.setI2COutput(COM_TYPE_UBX);
+  	gps.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT);
+	gps.setAopCfg(1);
+}
+
 void setup() {
 	beginPMU();
 	stm.begin("radio", IPAddress(192, 168, 42, 101), new ModuleCallbacks());
 	beginGPS();
 	beginLora();
+	beginAssistNow();
 }
 
 void loop() {
 	TickType_t lastWakeTime = xTaskGetTickCount();
 	if (gps.getPVT() && gps.getTimeValid()) {
+		if (!fixTime && gps.getFixType() >= 2)
+			fixTime = millis() - fixTimeStart;
 		StaticJsonDocument<STM_JSON_DOCUMENT_MEDIUM_SIZE> doc;
+		doc["fixTime"] = fixTime;
 		doc["fixType"] = gps.getFixType(); 			// GNSSfix Type: 0 = no fix, 1 = dead reckoning only, 2 = 2D-fix, 3 = 3D-fix
 		doc["epoch"] = gps.getUnixEpoch();			// Get the current Unix epoch time rounded to the nearest second	
 		doc["lon"] = gps.getLongitude();			// Longitude: deg * 1e-7
