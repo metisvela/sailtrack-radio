@@ -40,13 +40,13 @@ struct LoraMetric {
 	char name[32];
 } loraMetrics[] = {
 	{ "0", "sensor/gps0", "epoch" },
-	{ "0", "sensor/gps0", "lon" },
-	{ "0", "sensor/gps0", "lat" },
-	{ "0", "metric/boat", "sog" },
-	{ "0", "metric/boat", "cog" },
-	{ "0", "metric/boat", "heading"},
-	{ "0", "metric/boat", "pitch" },
-	{ "0", "metric/boat", "roll" }
+	{ "0", "boat", "lon" },
+	{ "0", "boat", "lat" },
+	{ "0", "boat", "sog" },
+	{ "0", "boat", "cog" },
+	{ "0", "boat", "heading"},
+	{ "0", "boat", "pitch" },
+	{ "0", "boat", "roll" }
 };
 
 // ------------------------------------------------------------------- //
