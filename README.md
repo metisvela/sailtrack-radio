@@ -20,7 +20,7 @@ The SailTrack Radio module is based on a battery powered LilyGo TTGO T-Beam conn
 </p>
 
 ## Installation
- 1. [Install PlatformIO Core] (https://docs.platformio.org/en/latest/core/installation/index.html).  
+ 1. [Install PlatformIO Core](https://docs.platformio.org/en/latest/core/installation/index.html).  
  2. Clone the SailTrack Radio repository:
 ```bash
 git clone https://github.com/metis-vela-unipd/sailtrack-radio.git 
