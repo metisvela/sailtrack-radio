@@ -39,15 +39,14 @@ struct LoraMetric {
 	char topic[32];
 	char name[32];
 } loraMetrics[] = {
-	{ "0", "sensor/gps0", "fixType" },
 	{ "0", "sensor/gps0", "epoch" },
-	{ "0", "sensor/gps0", "lon" },
-	{ "0", "sensor/gps0", "lat" },
-	{ "0", "sensor/gps0", "gSpeed" },
-	{ "0", "sensor/gps0", "headMot" },
-	{ "0", "sensor/imu0", "euler.x"},
-	{ "0", "sensor/imu0", "euler.y" },
-	{ "0", "sensor/imu0", "euler.z" }
+	{ "0", "boat", "lon" },
+	{ "0", "boat", "lat" },
+	{ "0", "boat", "sog" },
+	{ "0", "boat", "cog" },
+	{ "0", "boat", "heading"},
+	{ "0", "boat", "pitch" },
+	{ "0", "boat", "roll" }
 };
 
 // ------------------------------------------------------------------- //
@@ -59,6 +58,8 @@ SX1262 lora = new Module(LORA_CS_PIN, LORA_DIO1_PIN, LORA_RST_PIN, LORA_BUSY_PIN
 E32_868T20D e32;
 
 size_t loraSentBytes = 0;
+unsigned long ttff = 0;
+unsigned long ttffStart;
 
 class ModuleCallbacks: public SailtrackModuleCallbacks {
 	void onStatusPublish(JsonObject status) {
@@ -67,6 +68,9 @@ class ModuleCallbacks: public SailtrackModuleCallbacks {
 		JsonObject lora = status.createNestedObject("lora");
 		lora["bitrate"] = loraSentBytes * 8 * STM_STATUS_PUBLISH_FREQ_HZ / 1000;
 		loraSentBytes = 0;
+		JsonObject gpsObj = status.createNestedObject("gps");
+		gpsObj["ttff"] = ttff;
+		gpsObj["aop"] = gps.getAOPSTATUSstatus();
 	}
 
 	void onMqttMessage(const char * topic, JsonObjectConst message) {
@@ -133,6 +137,8 @@ void beginGPS() {
 	gps.setDynamicModel(DYN_MODEL_SEA);
 	gps.setNavigationFrequency(GPS_NAVIGATION_FREQ_HZ);
 	gps.setAutoPVT(true);
+	gps.setAopCfg(1);
+	ttffStart = millis();
 }
 
 void beginLora() {
@@ -153,6 +159,7 @@ void setup() {
 void loop() {
 	TickType_t lastWakeTime = xTaskGetTickCount();
 	if (gps.getPVT() && gps.getTimeValid()) {
+		if (!ttff && gps.getFixType() >= 2) ttff = millis() - ttffStart;
 		StaticJsonDocument<STM_JSON_DOCUMENT_MEDIUM_SIZE> doc;
 		doc["fixType"] = gps.getFixType(); 			// GNSSfix Type: 0 = no fix, 1 = dead reckoning only, 2 = 2D-fix, 3 = 3D-fix
 		doc["epoch"] = gps.getUnixEpoch();			// Get the current Unix epoch time rounded to the nearest second	
