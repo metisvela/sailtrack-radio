@@ -27,7 +27,7 @@ The module performs the following tasks:
 
 ## Installation
 
-Follow the instructions below to get SailTrack Radio firmware correctly installed. If you encounter any problem, please [open an issue](https://github.com/metis-vela-unipd/sailtrack-radio/issues/new).
+Follow the instructions below to get the SailTrack Radio firmware correctly installed. If you encounter any problem, please [open an issue](https://github.com/metis-vela-unipd/sailtrack-radio/issues/new).
 
 1. [Install PlatformIO Core](https://docs.platformio.org/en/latest/core/installation/index.html).
 2. Clone the SailTrack Radio repository:
