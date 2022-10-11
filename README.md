@@ -9,7 +9,7 @@
 
 # SailTrack Radio
 
-SailTrack Radio is a component of the SailTrack system, it manages GPS data and forwards messages from the SailTrack Network to [SailTrack Ground](https://github.com/metis-vela-unipd/sailtrack-ground) using [LoRa](https://lora-alliance.org). To learn more about the SailTrack project, please visit the [documentation repository](https://github.com/metis-vela-unipd/sailtrack-docs), 
+SailTrack Radio is a component of the SailTrack system, it manages GPS data and forwards messages from the SailTrack Network to [SailTrack Ground](https://github.com/metis-vela-unipd/sailtrack-ground) using [LoRa](https://lora-alliance.org). To learn more about the SailTrack project, please visit the [documentation repository](https://github.com/metis-vela-unipd/sailtrack-docs).
 
 The SailTrack Radio module is based on a battery powered LilyGo TTGO T-Beam, consisting of an [ESP32](https://www.espressif.com/en/products/socs/esp32) microcontroller connected to a GPS module and a LoRa transceiver. For a more detailed hardware description of the module, please refer to the [Bill Of Materials](hardware/BOM.csv). The 3D-printable enclosure con be found [here](hardware/STL).
 
@@ -29,7 +29,7 @@ The module performs the following tasks:
 
 Follow the instructions below to get SailTrack Radio firmware correctly installed. If you encounter any problem, please [open an issue](https://github.com/metis-vela-unipd/sailtrack-radio/issues/new).
 
-1. [Install PlatformIO Core](https://docs.platformio.org/en/latest/core/installation/index.html).  
+1. [Install PlatformIO Core](https://docs.platformio.org/en/latest/core/installation/index.html).
 2. Clone the SailTrack Radio repository:
    ```
    git clone https://github.com/metis-vela-unipd/sailtrack-radio.git 
@@ -39,14 +39,15 @@ Follow the instructions below to get SailTrack Radio firmware correctly installe
    cd sailtrack-radio
    ```
 4. **(macOS ONLY)** Uncomment the commented lines after "Patch for macOS" in the `platformio.ini` file.
-5. Connect the microcontroller with an USB cable.
+5. Connect the module with an USB cable.
 6. Finally, flash the firmware:
    ```
    pio run
    ```
 
 ## Usage
-Once the firmware is uploaded the module can work with the SailTrack system. When SailTrack Radio is turned on, a LED start to blink to notify the user about the connection status with SailTrack Core. Then, if the connection is successful, the LED stays on, otherwise the module will put itself to sleep, and it will try to connect later.
+
+Once the firmware is uploaded the module can work with the SailTrack system. When SailTrack Radio is turned on, a LED start to blink to notify the user about the connection status with SailTrack Core. Then, if the connection is successful, the LED stays on, otherwise the module will put itself to sleep, and it will try to connect later. Once the module is connected it will automatically start sending measurements.
 
 ## Contributing
 
@@ -54,4 +55,4 @@ Pull requests are welcome. For major changes, please [open an issue](https://git
 
 ## License
 
-Copyright © 2022, [Métis Vela Unipd](https://github.com/metis-vela-unipd). SailTrack-Radio is available under the [GPL-3.0 license](https://www.gnu.org/licenses/gpl-3.0.en.html). See the LICENSE file for more info. 
+Copyright © 2022, [Métis Vela Unipd](https://github.com/metis-vela-unipd). SailTrack Radio is available under the [GPL-3.0 license](https://www.gnu.org/licenses/gpl-3.0.en.html). See the LICENSE file for more info. 
