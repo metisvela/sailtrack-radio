@@ -1,11 +1,26 @@
 #include <Arduino.h>
+#include <Wire.h>
 #include <SailtrackModule.h>
-#include <axp20x.h>
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 #include <RadioLib.h>
 #include <E32-868T20D.h>
+#include <XPowersLib.h>
 
 // -------------------------- Configuration -------------------------- //
+
+#define XPOWERS_CHIP_AXP2101
+
+#ifndef CONFIG_PMU_SDA
+#define CONFIG_PMU_SDA 21
+#endif
+
+#ifndef CONFIG_PMU_SCL
+#define CONFIG_PMU_SCL 22
+#endif
+
+#ifndef CONFIG_PMU_IRQ
+#define CONFIG_PMU_IRQ 35
+#endif
 
 #define MQTT_PUBLISH_FREQ_HZ		5
 #define LORA_SEND_FREQ_HZ			1
@@ -53,9 +68,14 @@ struct LoraMetric {
 
 SailtrackModule stm;
 SFE_UBLOX_GNSS gps;
-AXP20X_Class pmu;
+bool  pmu_flag = 0;
+XPowersAXP2101 pmu;
 SX1262 lora = new Module(LORA_CS_PIN, LORA_DIO1_PIN, LORA_RST_PIN, LORA_BUSY_PIN);
 E32_868T20D e32;
+
+const uint8_t i2c_sda = CONFIG_PMU_SDA;
+const uint8_t i2c_scl = CONFIG_PMU_SCL;
+const uint8_t pmu_irq_pin = CONFIG_PMU_IRQ;
 
 size_t loraSentBytes = 0;
 unsigned long ttff = 0;
@@ -120,17 +140,17 @@ void loraTask(void * pvArguments) {
 
 void beginPMU() {
 	Wire.begin();
-	pmu.begin(Wire, AXP192_SLAVE_ADDRESS);
-	pmu.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);	// GPIO Pins Power Source
-	pmu.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);	// Unused
-	pmu.setPowerOutPut(AXP192_LDO2, AXP202_OFF);	// LoRa Power Source
-	pmu.setPowerOutPut(AXP192_LDO3, AXP202_OFF);	// GPS Power Source
-    pmu.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);	// External Connector Power Source
+	pmu.begin(Wire, AXP2101_SLAVE_ADDRESS, i2c_sda, i2c_scl);
+	//pmu.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);	// GPIO Pins Power Source
+	//pmu.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);	// Unused
+	//pmu.setPowerOutPut(AXP192_LDO2, AXP202_OFF);	// LoRa Power Source
+	//pmu.setPowerOutPut(AXP192_LDO3, AXP202_OFF);	// GPS Power Source
+    //pmu.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);	// External Connector Power Source
 }
 
 void beginGPS() {
-	pmu.setLDO3Voltage(3300);
-	pmu.setPowerOutPut(AXP192_LDO3, AXP202_ON);
+	//pmu.setLDO3Voltage(3300);
+	//pmu.setPowerOutPut(AXP192_LDO3, AXP202_ON);
 	Serial1.begin(GPS_BAUD_RATE, GPS_SERIAL_CONFIG, GPS_RX_PIN, GPS_TX_PIN);
 	gps.begin(Serial1);
 	gps.setUART1Output(COM_TYPE_UBX);
@@ -142,8 +162,8 @@ void beginGPS() {
 }
 
 void beginLora() {
-	pmu.setLDO2Voltage(3300);
-	pmu.setPowerOutPut(AXP192_LDO2, AXP202_ON);
+	//pmu.setLDO2Voltage(3300);
+	//pmu.setPowerOutPut(AXP192_LDO2, AXP202_ON);
 	lora.begin(E32_BASE_FREQUENCY_MHZ + E32_CHANNEL, E32_BANDWIDTH_KHZ, E32_SPREADING_FACTOR, E32_CODING_RATE_DENOM);
 	for (auto metric : loraMetrics) stm.subscribe(metric.topic);
 	xTaskCreate(loraTask, "loraTask", STM_TASK_MEDIUM_STACK_SIZE, NULL, STM_TASK_MEDIUM_PRIORITY, NULL);
