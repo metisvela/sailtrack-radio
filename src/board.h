@@ -51,7 +51,8 @@ bool initPMU()
         return false;
     }
 
-    PMU->setChargingLedMode(XPOWERS_CHG_LED_ON);
+    PMU->isCharging() ? PMU->setChargingLedMode(XPOWERS_CHG_LED_ON) : PMU->setChargingLedMode(XPOWERS_CHG_LED_OFF);
+
 
     pinMode(PMU_IRQ, INPUT_PULLUP);
     attachInterrupt(PMU_IRQ, setPmuFlag, FALLING);

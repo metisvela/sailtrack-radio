@@ -154,10 +154,11 @@ void beginGPS() {
 	gps.setAutoPVT(true);
 	gps.setAopCfg(1);
 	ttffStart = millis();
-	Serial.println(gps.isConnected() ? "true" : "false");
 }
 
 void beginLora() {
+	PMU->setPowerChannelVoltage(XPOWERS_ALDO2, 3300);
+	PMU->enablePowerOutput(XPOWERS_ALDO2);
 	lora.begin(E32_BASE_FREQUENCY_MHZ + E32_CHANNEL, E32_BANDWIDTH_KHZ, E32_SPREADING_FACTOR, E32_CODING_RATE_DENOM);
 	for (auto metric : loraMetrics) stm.subscribe(metric.topic);
 	xTaskCreate(loraTask, "loraTask", STM_TASK_MEDIUM_STACK_SIZE, NULL, STM_TASK_MEDIUM_PRIORITY, NULL);
@@ -172,6 +173,8 @@ void setup() {
 }
 
 void loop() {
+	
+	PMU->isCharging() ? PMU->setChargingLedMode(XPOWERS_CHG_LED_ON) : PMU->setChargingLedMode(XPOWERS_CHG_LED_OFF);
 
 	TickType_t lastWakeTime = xTaskGetTickCount();
 	if (gps.getPVT() && gps.getTimeValid()) {
