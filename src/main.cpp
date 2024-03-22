@@ -5,6 +5,7 @@
 #include <RadioLib.h>
 #include <E32-868T20D.h>
 #include <XPowersLib.h>
+#include <board.h>
 
 // -------------------------- Configuration -------------------------- //
 
@@ -84,7 +85,7 @@ unsigned long ttffStart;
 class ModuleCallbacks: public SailtrackModuleCallbacks {
 	void onStatusPublish(JsonObject status) {
 		JsonObject battery = status.createNestedObject("battery");
-		battery["voltage"] = pmu.getBattVoltage() / 1000;
+		battery["voltage"] = PMU->getBattVoltage() / 1000;
 		JsonObject lora = status.createNestedObject("lora");
 		lora["bitrate"] = loraSentBytes * 8 * STM_STATUS_PUBLISH_FREQ_HZ / 1000;
 		loraSentBytes = 0;
@@ -139,18 +140,12 @@ void loraTask(void * pvArguments) {
 }
 
 void beginPMU() {
-	Wire.begin();
-	pmu.begin(Wire, AXP2101_SLAVE_ADDRESS, i2c_sda, i2c_scl);
-	//pmu.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);	// GPIO Pins Power Source
-	//pmu.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);	// Unused
-	//pmu.setPowerOutPut(AXP192_LDO2, AXP202_OFF);	// LoRa Power Source
-	//pmu.setPowerOutPut(AXP192_LDO3, AXP202_OFF);	// GPS Power Source
-    //pmu.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);	// External Connector Power Source
+	initPMU();
 }
 
 void beginGPS() {
-	//pmu.setLDO3Voltage(3300);
-	//pmu.setPowerOutPut(AXP192_LDO3, AXP202_ON);
+	PMU->setPowerChannelVoltage(XPOWERS_LDO3, 3300);
+	PMU->enablePowerOutput(XPOWERS_LDO3);
 	Serial1.begin(GPS_BAUD_RATE, GPS_SERIAL_CONFIG, GPS_RX_PIN, GPS_TX_PIN);
 	gps.begin(Serial1);
 	gps.setUART1Output(COM_TYPE_UBX);
@@ -159,17 +154,17 @@ void beginGPS() {
 	gps.setAutoPVT(true);
 	gps.setAopCfg(1);
 	ttffStart = millis();
+	Serial.println(gps.isConnected() ? "true" : "false");
 }
 
 void beginLora() {
-	//pmu.setLDO2Voltage(3300);
-	//pmu.setPowerOutPut(AXP192_LDO2, AXP202_ON);
 	lora.begin(E32_BASE_FREQUENCY_MHZ + E32_CHANNEL, E32_BANDWIDTH_KHZ, E32_SPREADING_FACTOR, E32_CODING_RATE_DENOM);
 	for (auto metric : loraMetrics) stm.subscribe(metric.topic);
 	xTaskCreate(loraTask, "loraTask", STM_TASK_MEDIUM_STACK_SIZE, NULL, STM_TASK_MEDIUM_PRIORITY, NULL);
 }
 
 void setup() {
+	Serial.begin(115200);
 	beginPMU();
 	stm.begin("radio", IPAddress(192, 168, 42, 101), new ModuleCallbacks());
 	beginGPS();
@@ -177,6 +172,7 @@ void setup() {
 }
 
 void loop() {
+
 	TickType_t lastWakeTime = xTaskGetTickCount();
 	if (gps.getPVT() && gps.getTimeValid()) {
 		if (!ttff && gps.getFixType() >= 2) ttff = millis() - ttffStart;
