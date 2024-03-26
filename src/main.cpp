@@ -2,7 +2,7 @@
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 #include <RadioLib.h>
 #include <E32-868T20D.h>
-#include "board.h"
+#include <board.h>
 
 // -------------------------- Configuration -------------------------- //
 
