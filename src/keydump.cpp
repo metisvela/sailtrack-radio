@@ -1,7 +1,6 @@
-#include <Arduino.h>
-#include <axp20x.h>
 #include <RadioLib.h>
 #include <E32-868T20D.h>
+#include <board.h>
 
 // -------------------------- Configuration -------------------------- //
 
@@ -19,24 +18,17 @@
 #define E32_CODING_RATE_DENOM       5
 
 // ------------------------------------------------------------------- //
-
-AXP20X_Class pmu;
+;
 SX1262 lora = new Module(LORA_CS_PIN, LORA_DIO1_PIN, LORA_RST_PIN, LORA_BUSY_PIN);
 E32_868T20D e32;
 
 void beginPMU() {
-	Wire.begin();
-	pmu.begin(Wire, AXP192_SLAVE_ADDRESS);
-	pmu.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);	// GPIO Pins Power Source
-	pmu.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);	// Unused
-	pmu.setPowerOutPut(AXP192_LDO2, AXP202_OFF);	// LoRa Power Source
-	pmu.setPowerOutPut(AXP192_LDO3, AXP202_OFF);	// GPS Power Source
-    pmu.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);	// External Connector Power Source
+    initBoard();
 }
 
 void beginLora() {
-	pmu.setLDO2Voltage(3300);
-	pmu.setPowerOutPut(AXP192_LDO2, AXP202_ON);
+    PMU->setPowerChannelVoltage(XPOWERS_ALDO2, 3300);
+	PMU->enablePowerOutput(XPOWERS_ALDO2);
 	lora.begin(E32_BASE_FREQUENCY_MHZ + E32_CHANNEL, E32_BANDWIDTH_KHZ, E32_SPREADING_FACTOR, E32_CODING_RATE_DENOM);
 }
 

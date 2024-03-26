@@ -1,43 +1,27 @@
-#include <Arduino.h>
-#include <Wire.h>
 #include <SailtrackModule.h>
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 #include <RadioLib.h>
 #include <E32-868T20D.h>
-#include <XPowersLib.h>
-#include <board.h>
+#include "board.h"
 
 // -------------------------- Configuration -------------------------- //
 
-#define XPOWERS_CHIP_AXP2101
-
-#ifndef CONFIG_PMU_SDA
-#define CONFIG_PMU_SDA 21
-#endif
-
-#ifndef CONFIG_PMU_SCL
-#define CONFIG_PMU_SCL 22
-#endif
-
-#ifndef CONFIG_PMU_IRQ
-#define CONFIG_PMU_IRQ 35
-#endif
-
+//LORA parameteres
 #define MQTT_PUBLISH_FREQ_HZ		5
 #define LORA_SEND_FREQ_HZ			1
-
-#define GPS_BAUD_RATE 				9600
-#define GPS_SERIAL_CONFIG 			SERIAL_8N1
-#define GPS_RX_PIN 					34
-#define GPS_TX_PIN 					12
-#define GPS_NAVIGATION_FREQ_HZ		MQTT_PUBLISH_FREQ_HZ
-
 #define LORA_CS_PIN 				18
 #define LORA_DIO1_PIN 				33
 #define LORA_RST_PIN 				23
 #define LORA_BUSY_PIN 				32
 #define LORA_MESSAGE_BUFFER_SIZE	512
 #define LORA_PACKET_SIZE 			64
+
+//GPS parameters
+#define GPS_BAUD_RATE 				9600
+#define GPS_SERIAL_CONFIG 			SERIAL_8N1
+#define GPS_RX_PIN 					34
+#define GPS_TX_PIN 					12
+#define GPS_NAVIGATION_FREQ_HZ		MQTT_PUBLISH_FREQ_HZ
 
 // EBYTE E32-868T20D parameters
 #define E32_CHANNEL 				0x09
@@ -69,14 +53,9 @@ struct LoraMetric {
 
 SailtrackModule stm;
 SFE_UBLOX_GNSS gps;
-bool  pmu_flag = 0;
-XPowersAXP2101 pmu;
+
 SX1262 lora = new Module(LORA_CS_PIN, LORA_DIO1_PIN, LORA_RST_PIN, LORA_BUSY_PIN);
 E32_868T20D e32;
-
-const uint8_t i2c_sda = CONFIG_PMU_SDA;
-const uint8_t i2c_scl = CONFIG_PMU_SCL;
-const uint8_t pmu_irq_pin = CONFIG_PMU_IRQ;
 
 size_t loraSentBytes = 0;
 unsigned long ttff = 0;

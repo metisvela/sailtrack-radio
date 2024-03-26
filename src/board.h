@@ -1,11 +1,28 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
-#include "utilities.h"
-
-#if defined(HAS_PMU)
 #include "XPowersLib.h"
 
+
+//LILYGO_TBeam_V1_X configuration
+#define GPS_RX_PIN                  34
+#define GPS_TX_PIN                  12
+#define BUTTON_PIN                  38
+#define BUTTON_PIN_MASK             GPIO_SEL_38
+#define I2C_SDA                     21
+#define I2C_SCL                     22
+#define PMU_IRQ                     35
+
+#define RADIO_SCLK_PIN               5
+#define RADIO_MISO_PIN              19
+#define RADIO_MOSI_PIN              27
+#define RADIO_CS_PIN                18
+#define RADIO_DIO0_PIN              26
+#define RADIO_RST_PIN               23
+#define RADIO_DIO1_PIN              33
+#define RADIO_BUSY_PIN              32
+#define HAS_GPS        
+#define HAS_PMU
 
 XPowersLibInterface *PMU = NULL;
 
@@ -33,17 +50,6 @@ bool initPMU()
             PMU = NULL;
         } else {
             Serial.println("AXP2101 PMU init succeeded, using AXP2101 PMU");
-        }
-    }
-
-    if (!PMU) {
-        PMU = new XPowersAXP192(PMU_WIRE_PORT);
-        if (!PMU->init()) {
-            Serial.println("Warning: Failed to find AXP192 power management");
-            delete PMU;
-            PMU = NULL;
-        } else {
-            Serial.println("AXP192 PMU init succeeded, using AXP192 PMU");
         }
     }
 
@@ -128,81 +134,7 @@ bool initPMU()
 #endif /*CONFIG_IDF_TARGET_ESP32*/
 
 
-#if defined(LILYGO_TBeamS3_SUPREME_V3_0)
-
-        //t-beam m.2 inface
-        //gps
-        PMU->setPowerChannelVoltage(XPOWERS_ALDO4, 3300);
-        PMU->enablePowerOutput(XPOWERS_ALDO4);
-
-        // lora
-        PMU->setPowerChannelVoltage(XPOWERS_ALDO3, 3300);
-        PMU->enablePowerOutput(XPOWERS_ALDO3);
-
-        // In order to avoid bus occupation, during initialization, the SD card and QMC sensor are powered off and restarted
-        if (ESP_SLEEP_WAKEUP_UNDEFINED == esp_sleep_get_wakeup_cause()) {
-            Serial.println("Power off and restart ALDO BLDO..");
-            PMU->disablePowerOutput(XPOWERS_ALDO1);
-            PMU->disablePowerOutput(XPOWERS_ALDO2);
-            PMU->disablePowerOutput(XPOWERS_BLDO1);
-            delay(250);
-        }
-
-        // Sensor
-        PMU->setPowerChannelVoltage(XPOWERS_ALDO1, 3300);
-        PMU->enablePowerOutput(XPOWERS_ALDO1);
-
-        PMU->setPowerChannelVoltage(XPOWERS_ALDO2, 3300);
-        PMU->enablePowerOutput(XPOWERS_ALDO2);
-
-        //Sdcard
-
-        PMU->setPowerChannelVoltage(XPOWERS_BLDO1, 3300);
-        PMU->enablePowerOutput(XPOWERS_BLDO1);
-
-        PMU->setPowerChannelVoltage(XPOWERS_BLDO2, 3300);
-        PMU->enablePowerOutput(XPOWERS_BLDO2);
-
-        //face m.2
-        PMU->setPowerChannelVoltage(XPOWERS_DCDC3, 3300);
-        PMU->enablePowerOutput(XPOWERS_DCDC3);
-
-        PMU->setPowerChannelVoltage(XPOWERS_DCDC4, XPOWERS_AXP2101_DCDC4_VOL2_MAX);
-        PMU->enablePowerOutput(XPOWERS_DCDC4);
-
-        PMU->setPowerChannelVoltage(XPOWERS_DCDC5, 3300);
-        PMU->enablePowerOutput(XPOWERS_DCDC5);
-
-
-        //not use channel
-        PMU->disablePowerOutput(XPOWERS_DCDC2);
-        // PMU->disablePowerOutput(XPOWERS_DCDC4);
-        // PMU->disablePowerOutput(XPOWERS_DCDC5);
-        PMU->disablePowerOutput(XPOWERS_DLDO1);
-        PMU->disablePowerOutput(XPOWERS_DLDO2);
-        PMU->disablePowerOutput(XPOWERS_VBACKUP);
-
-        // Set constant current charge current limit
-        PMU->setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_500MA);
-
-        // Set charge cut-off voltage
-        PMU->setChargeTargetVoltage(XPOWERS_AXP2101_CHG_VOL_4V2);
-
-        // Disable all interrupts
-        PMU->disableIRQ(XPOWERS_AXP2101_ALL_IRQ);
-        // Clear all interrupt flags
-        PMU->clearIrqStatus();
-        // Enable the required interrupt function
-        PMU->enableIRQ(
-            XPOWERS_AXP2101_BAT_INSERT_IRQ    | XPOWERS_AXP2101_BAT_REMOVE_IRQ      |   //BATTERY
-            XPOWERS_AXP2101_VBUS_INSERT_IRQ   | XPOWERS_AXP2101_VBUS_REMOVE_IRQ     |   //VBUS
-            XPOWERS_AXP2101_PKEY_SHORT_IRQ    | XPOWERS_AXP2101_PKEY_LONG_IRQ       |   //POWER KEY
-            XPOWERS_AXP2101_BAT_CHG_DONE_IRQ  | XPOWERS_AXP2101_BAT_CHG_START_IRQ       //CHARGE
-            // XPOWERS_AXP2101_PKEY_NEGATIVE_IRQ | XPOWERS_AXP2101_PKEY_POSITIVE_IRQ   |   //POWER KEY
-        );
-
-#endif
-    }
+}
 
     PMU->enableSystemVoltageMeasure();
     PMU->enableVbusVoltageMeasure();
@@ -274,13 +206,6 @@ bool initPMU()
     return true;
 }
 
-void disablePeripherals()
-{
-}
-#else
-#define initPMU()
-#define disablePeripherals()
-#endif
 
 SPIClass SDSPI(HSPI);
 
@@ -290,36 +215,8 @@ void initBoard()
     Serial.begin(115200);
     Serial.println("initBoard");
     SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
-
-
     Wire.begin(I2C_SDA, I2C_SCL);
-
-
-#ifdef I2C1_SDA
-    Wire1.begin(I2C1_SDA, I2C1_SCL);
-#endif
-
-
-#ifdef RADIO_TCXO_EN_PIN
-    pinMode(RADIO_TCXO_EN_PIN, OUTPUT);
-    digitalWrite(RADIO_TCXO_EN_PIN, HIGH);
-#endif
-
-
     initPMU();
-
-
-#ifdef BOARD_LED
-    /*
-    * T-BeamV1.0, V1.1 LED defaults to low level as trun on,
-    * so it needs to be forced to pull up
-    * * * * */
-#if LED_ON == LOW
-    gpio_hold_dis(GPIO_NUM_4);
-#endif
-    pinMode(BOARD_LED, OUTPUT);
-    digitalWrite(BOARD_LED, LED_ON);
-#endif
 }
 
 
