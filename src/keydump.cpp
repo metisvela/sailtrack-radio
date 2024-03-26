@@ -23,7 +23,7 @@ SX1262 lora = new Module(LORA_CS_PIN, LORA_DIO1_PIN, LORA_RST_PIN, LORA_BUSY_PIN
 E32_868T20D e32;
 
 void beginPMU() {
-    initBoard();
+    initPMU();
 }
 
 void beginLora() {

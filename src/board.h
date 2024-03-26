@@ -210,13 +210,3 @@ bool initPMU()
 SPIClass SDSPI(HSPI);
 
 
-void initBoard()
-{
-    Serial.begin(115200);
-    Serial.println("initBoard");
-    SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
-    Wire.begin(I2C_SDA, I2C_SCL);
-    initPMU();
-}
-
-
