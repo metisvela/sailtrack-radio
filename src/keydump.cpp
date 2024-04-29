@@ -25,19 +25,19 @@ SX1262 lora = new Module(LORA_CS_PIN, LORA_DIO1_PIN, LORA_RST_PIN, LORA_BUSY_PIN
 E32_868T20D e32;
 
 void beginPMU() {
-	Wire.begin();
-	pmu.begin(Wire, AXP192_SLAVE_ADDRESS);
-	pmu.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);	// GPIO Pins Power Source
-	pmu.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);	// Unused
-	pmu.setPowerOutPut(AXP192_LDO2, AXP202_OFF);	// LoRa Power Source
-	pmu.setPowerOutPut(AXP192_LDO3, AXP202_OFF);	// GPS Power Source
-    pmu.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);	// External Connector Power Source
+    Wire.begin();
+    pmu.begin(Wire, AXP192_SLAVE_ADDRESS);
+    pmu.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);   // GPIO Pins Power Source
+    pmu.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);   // Unused
+    pmu.setPowerOutPut(AXP192_LDO2, AXP202_OFF);    // LoRa Power Source
+    pmu.setPowerOutPut(AXP192_LDO3, AXP202_OFF);    // GPS Power Source
+    pmu.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);   // External Connector Power Source
 }
 
 void beginLora() {
-	pmu.setLDO2Voltage(3300);
-	pmu.setPowerOutPut(AXP192_LDO2, AXP202_ON);
-	lora.begin(E32_BASE_FREQUENCY_MHZ + E32_CHANNEL, E32_BANDWIDTH_KHZ, E32_SPREADING_FACTOR, E32_CODING_RATE_DENOM);
+    pmu.setLDO2Voltage(3300);
+    pmu.setPowerOutPut(AXP192_LDO2, AXP202_ON);
+    lora.begin(E32_BASE_FREQUENCY_MHZ + E32_CHANNEL, E32_BANDWIDTH_KHZ, E32_SPREADING_FACTOR, E32_CODING_RATE_DENOM);
 }
 
 void setup() {

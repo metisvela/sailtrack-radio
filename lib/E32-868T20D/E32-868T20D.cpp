@@ -26,12 +26,12 @@ uint16_t E32_868T20D::getAddress(uint8_t * packet) {
 
 size_t E32_868T20D::decode(uint8_t * packet, char * output) {
     size_t len = packet[0];
-	if (checksum(packet, len+5)) return 0;
-	uint8_t index = packet[1];
-	for (int i = 0; i < len; i++)
-		output[i] = packet[i+4] ^ keys[index];
-	output[len] = 0;
-	return len;
+    if (checksum(packet, len+5)) return 0;
+    uint8_t index = packet[1];
+    for (int i = 0; i < len; i++)
+        output[i] = packet[i+4] ^ keys[index];
+    output[len] = 0;
+    return len;
 }
 
 void E32_868T20D::generateKeyDumpPacket(uint16_t address, uint8_t keyIndex, uint8_t * output, size_t * outputSize) {
