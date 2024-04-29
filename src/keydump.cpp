@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <axp20x.h>
+#include <XPowersLib.h>
 #include <RadioLib.h>
 #include <E32-868T20D.h>
 
@@ -20,23 +20,35 @@
 
 // ------------------------------------------------------------------- //
 
-AXP20X_Class pmu;
+XPowersLibInterface * pmu = new XPowersAXP2101(Wire);
 SX1262 lora = new Module(LORA_CS_PIN, LORA_DIO1_PIN, LORA_RST_PIN, LORA_BUSY_PIN);
 E32_868T20D e32;
 
 void beginPMU() {
-    Wire.begin();
-    pmu.begin(Wire, AXP192_SLAVE_ADDRESS);
-    pmu.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);   // GPIO Pins Power Source
-    pmu.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);   // Unused
-    pmu.setPowerOutPut(AXP192_LDO2, AXP202_OFF);    // LoRa Power Source
-    pmu.setPowerOutPut(AXP192_LDO3, AXP202_OFF);    // GPS Power Source
-    pmu.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);   // External Connector Power Source
+    pmu->init();
+    // Protect the ESP32 power channel from being disabled to avoid bricking the board
+    pmu->setProtectedChannel(XPOWERS_DCDC1);
+    // Disable all power outputs, they will be enabled on each module's begin() function
+    pmu->disablePowerOutput(XPOWERS_DCDC2);
+    pmu->disablePowerOutput(XPOWERS_DCDC3);
+    pmu->disablePowerOutput(XPOWERS_DCDC4);
+    pmu->disablePowerOutput(XPOWERS_DCDC5);
+    pmu->disablePowerOutput(XPOWERS_ALDO1);
+    pmu->disablePowerOutput(XPOWERS_ALDO2);
+    pmu->disablePowerOutput(XPOWERS_ALDO3);
+    pmu->disablePowerOutput(XPOWERS_ALDO4);
+    pmu->disablePowerOutput(XPOWERS_BLDO1);
+    pmu->disablePowerOutput(XPOWERS_BLDO2);
+    pmu->disablePowerOutput(XPOWERS_DLDO1);
+    pmu->disablePowerOutput(XPOWERS_DLDO2);
+    pmu->disablePowerOutput(XPOWERS_VBACKUP);
+    // Set the battery charging current to 1A
+    pmu->setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_1000MA);
 }
 
 void beginLora() {
-    pmu.setLDO2Voltage(3300);
-    pmu.setPowerOutPut(AXP192_LDO2, AXP202_ON);
+    pmu->setPowerChannelVoltage(XPOWERS_ALDO2, 3300);
+    pmu->enablePowerOutput(XPOWERS_ALDO2);
     lora.begin(E32_BASE_FREQUENCY_MHZ + E32_CHANNEL, E32_BANDWIDTH_KHZ, E32_SPREADING_FACTOR, E32_CODING_RATE_DENOM);
 }
 

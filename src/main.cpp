@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <SailtrackModule.h>
-#include <axp20x.h>
+#include <XPowersLib.h>
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 #include <RadioLib.h>
 #include <E32-868T20D.h>
@@ -53,7 +53,7 @@ struct LoraMetric {
 
 SailtrackModule stm;
 SFE_UBLOX_GNSS gps;
-AXP20X_Class pmu;
+XPowersLibInterface * pmu = new XPowersAXP2101(Wire);
 SX1262 lora = new Module(LORA_CS_PIN, LORA_DIO1_PIN, LORA_RST_PIN, LORA_BUSY_PIN);
 E32_868T20D e32;
 
@@ -64,7 +64,8 @@ unsigned long ttffStart;
 class ModuleCallbacks: public SailtrackModuleCallbacks {
     void onStatusPublish(JsonObject status) {
         JsonObject battery = status.createNestedObject("battery");
-        battery["voltage"] = pmu.getBattVoltage() / 1000;
+        battery["voltage"] = pmu->getBattVoltage() / 1000.;
+        battery["percentage"] = pmu->getBatteryPercent();
         JsonObject lora = status.createNestedObject("lora");
         lora["bitrate"] = loraSentBytes * 8 * STM_STATUS_PUBLISH_FREQ_HZ / 1000;
         loraSentBytes = 0;
@@ -119,18 +120,32 @@ void loraTask(void * pvArguments) {
 }
 
 void beginPMU() {
-    Wire.begin();
-    pmu.begin(Wire, AXP192_SLAVE_ADDRESS);
-    pmu.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);	// GPIO Pins Power Source
-    pmu.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);	// Unused
-    pmu.setPowerOutPut(AXP192_LDO2, AXP202_OFF);	// LoRa Power Source
-    pmu.setPowerOutPut(AXP192_LDO3, AXP202_OFF);	// GPS Power Source
-    pmu.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);	// External Connector Power Source
+    pmu->init();
+    // Protect the ESP32 power channel from being disabled to avoid bricking the board
+    pmu->setProtectedChannel(XPOWERS_DCDC1);
+    // Disable all power outputs, they will be enabled on each module's begin() function
+    pmu->disablePowerOutput(XPOWERS_DCDC2);
+    pmu->disablePowerOutput(XPOWERS_DCDC3);
+    pmu->disablePowerOutput(XPOWERS_DCDC4);
+    pmu->disablePowerOutput(XPOWERS_DCDC5);
+    pmu->disablePowerOutput(XPOWERS_ALDO1);
+    pmu->disablePowerOutput(XPOWERS_ALDO2);
+    pmu->disablePowerOutput(XPOWERS_ALDO3);
+    pmu->disablePowerOutput(XPOWERS_ALDO4);
+    pmu->disablePowerOutput(XPOWERS_BLDO1);
+    pmu->disablePowerOutput(XPOWERS_BLDO2);
+    pmu->disablePowerOutput(XPOWERS_DLDO1);
+    pmu->disablePowerOutput(XPOWERS_DLDO2);
+    pmu->disablePowerOutput(XPOWERS_VBACKUP);
+    // Set the battery charging current to 1A
+    pmu->setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_1000MA);
 }
 
 void beginGPS() {
-    pmu.setLDO3Voltage(3300);
-    pmu.setPowerOutPut(AXP192_LDO3, AXP202_ON);
+    pmu->setPowerChannelVoltage(XPOWERS_ALDO3, 3300);
+    pmu->setPowerChannelVoltage(XPOWERS_VBACKUP, 3300);
+    pmu->enablePowerOutput(XPOWERS_ALDO3);
+    pmu->enablePowerOutput(XPOWERS_VBACKUP);
     Serial1.begin(GPS_BAUD_RATE, GPS_SERIAL_CONFIG, GPS_RX_PIN, GPS_TX_PIN);
     gps.begin(Serial1);
     gps.setUART1Output(COM_TYPE_UBX);
@@ -142,8 +157,8 @@ void beginGPS() {
 }
 
 void beginLora() {
-    pmu.setLDO2Voltage(3300);
-    pmu.setPowerOutPut(AXP192_LDO2, AXP202_ON);
+    pmu->setPowerChannelVoltage(XPOWERS_ALDO2, 3300);
+    pmu->enablePowerOutput(XPOWERS_ALDO2);
     lora.begin(E32_BASE_FREQUENCY_MHZ + E32_CHANNEL, E32_BANDWIDTH_KHZ, E32_SPREADING_FACTOR, E32_CODING_RATE_DENOM);
     for (auto metric : loraMetrics) stm.subscribe(metric.topic);
     xTaskCreate(loraTask, "loraTask", STM_TASK_MEDIUM_STACK_SIZE, NULL, STM_TASK_MEDIUM_PRIORITY, NULL);
@@ -161,7 +176,7 @@ void loop() {
     if (gps.getPVT() && gps.getTimeValid()) {
         if (!ttff && gps.getFixType() >= 2) ttff = millis() - ttffStart;
         StaticJsonDocument<STM_JSON_DOCUMENT_MEDIUM_SIZE> doc;
-        doc["fixType"] = gps.getFixType(); 			// GNSSfix Type: 0 = no fix, 1 = dead reckoning only, 2 = 2D-fix, 3 = 3D-fix
+        doc["fixType"] = gps.getFixType(); 			// GNSS fix Type: 0 = no fix, 1 = dead reckoning only, 2 = 2D-fix, 3 = 3D-fix
         doc["epoch"] = gps.getUnixEpoch();			// Get the current Unix epoch time rounded to the nearest second
         doc["lon"] = gps.getLongitude();			// Longitude: deg * 1e-7
         doc["lat"] = gps.getLatitude();				// Latitude: deg * 1e-7
