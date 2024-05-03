@@ -142,9 +142,12 @@ void beginPMU() {
 }
 
 void beginGPS() {
+    Serial.println("start begin gps");
+    pmu->setPowerChannelVoltage(XPOWERS_ALDO1, 3300);
     pmu->setPowerChannelVoltage(XPOWERS_ALDO3, 3300);
     pmu->setPowerChannelVoltage(XPOWERS_VBACKUP, 3300);
     pmu->enablePowerOutput(XPOWERS_ALDO3);
+    pmu->enablePowerOutput(XPOWERS_ALDO1);
     pmu->enablePowerOutput(XPOWERS_VBACKUP);
     Serial1.begin(GPS_BAUD_RATE, GPS_SERIAL_CONFIG, GPS_RX_PIN, GPS_TX_PIN);
     gps.begin(Serial1);
@@ -165,6 +168,7 @@ void beginLora() {
 }
 
 void setup() {
+    Serial.begin(115200);
     beginPMU();
     stm.begin("radio", IPAddress(192, 168, 42, 101), new ModuleCallbacks());
     beginGPS();
