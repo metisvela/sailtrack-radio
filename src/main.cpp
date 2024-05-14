@@ -91,6 +91,31 @@ class ModuleCallbacks: public SailtrackModuleCallbacks {
             }
         }
     }
+
+    uint32_t notificationLed(){
+		if(pmu->isCharging()){
+			return 0x0000FF00;
+		}
+
+		if(pmu->getBatteryPercent()<=20){
+			return 0x00FF0000;
+		}
+
+		if (pmu->getBatteryPercent()>20 && pmu->getBatteryPercent()<90){
+			if(gps.getFixType() >= 3){
+                return 0x000000FF;
+            }else{
+                return 0x00FFFF00;
+            }
+		}
+
+		if (pmu->getBatteryPercent()>=90){
+			return 0x00FF00FF;
+		}
+
+		return 0x00000000;
+	}
+
 };
 
 void loraTask(void * pvArguments) {
@@ -168,7 +193,7 @@ void setup() {
     beginPMU();
     stm.begin("radio", IPAddress(192, 168, 42, 101), new ModuleCallbacks());
     beginGPS();
-    beginLora();
+    // beginLora();
 }
 
 void loop() {
