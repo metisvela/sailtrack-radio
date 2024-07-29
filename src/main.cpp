@@ -110,11 +110,13 @@ void loraTask(void * pvArguments) {
         size_t len;
         size_t consumed = 0;
         size_t toConsume = strlen(message);
+        pmu->enablePowerOutput(XPOWERS_ALDO2);
         while (consumed < toConsume) {
             consumed += e32.encode(E32_ADDRESS, message + consumed, packet, &len);
             lora.transmit(packet, len);
             loraSentBytes += len;
         }
+        pmu->disablePowerOutput(XPOWERS_ALDO2);
         vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(LORA_TASK_INTERVAL_MS));
     }
 }
