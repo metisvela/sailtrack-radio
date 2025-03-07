@@ -34,6 +34,9 @@
 #define LOOP_TASK_INTERVAL_MS       1000 / (2 * GPS_NAVIGATION_FREQ_HZ)
 #define LORA_TASK_INTERVAL_MS       1000 / LORA_SEND_FREQ_HZ
 
+#define VMIN 3.2  
+#define VMAX  4.2  
+
 struct LoraMetric {
     char value[32];
     char topic[32];
@@ -61,11 +64,23 @@ size_t loraSentBytes = 0;
 unsigned long ttff = 0;
 unsigned long ttffStart;
 
+float getBatteryPercent() {
+    float voltage = pmu->getBattVoltage() / 1000.0;
+    if (voltage <= VMIN) {
+        return 0.0;
+    }
+    if (voltage >= VMAX) {
+        return 100.0;
+    }
+    float percentuale = (voltage - VMIN) / (VMAX - VMIN) * 100.0;
+    return percentuale;
+}
+
 class ModuleCallbacks: public SailtrackModuleCallbacks {
     void onStatusPublish(JsonObject status) {
         JsonObject battery = status.createNestedObject("battery");
         battery["voltage"] = pmu->getBattVoltage() / 1000.;
-        battery["percentage"] = pmu->getBatteryPercent();
+        battery["percentage"] = getBatteryPercent();
         battery["charging"] = pmu->isCharging();
         JsonObject lora = status.createNestedObject("lora");
         lora["bitrate"] = loraSentBytes * 8 * STM_STATUS_PUBLISH_FREQ_HZ / 1000;
@@ -93,15 +108,17 @@ class ModuleCallbacks: public SailtrackModuleCallbacks {
     }
 
     uint32_t notificationLed(){
+        float battery = getBatteryPercent();
+    
 		if(pmu->isCharging()){
 			return 0x0000FF00;
 		}
 
-		if(pmu->getBatteryPercent()<=20){
-            return 0x00FF0000;
+		if(battery<=20){
+			return 0x00FF0000;
 		}
 
-		if (pmu->getBatteryPercent()>20 && pmu->getBatteryPercent()<90){
+		if (battery>20 && battery<90){
 			if(gps.getFixType() >= 3){
                 return 0x000000FF;
             }else{
@@ -109,13 +126,16 @@ class ModuleCallbacks: public SailtrackModuleCallbacks {
             }
 		}
 
-		if (pmu->getBatteryPercent()>=90){
-            return 0x00FF00FF;
+		if (battery>=90){
+			return 0x00FF00FF;
 		}
 		return 0x00000000;
 	}
 
 };
+
+
+
 
 void loraTask(void * pvArguments) {
     TickType_t lastWakeTime = xTaskGetTickCount();
