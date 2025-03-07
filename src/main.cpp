@@ -66,12 +66,12 @@ class ModuleCallbacks: public SailtrackModuleCallbacks {
         JsonObject battery = status.createNestedObject("battery");
         battery["voltage"] = pmu->getBattVoltage() / 1000.;
         battery["percentage"] = pmu->getBatteryPercent();
+        battery["charging"] = pmu->isCharging();
         JsonObject lora = status.createNestedObject("lora");
         lora["bitrate"] = loraSentBytes * 8 * STM_STATUS_PUBLISH_FREQ_HZ / 1000;
         loraSentBytes = 0;
         JsonObject gpsObj = status.createNestedObject("gps");
         gpsObj["ttff"] = ttff;
-        gpsObj["aop"] = gps.getAOPSTATUSstatus();
     }
 
     void onMqttMessage(const char * topic, JsonObjectConst message) {
@@ -98,7 +98,7 @@ class ModuleCallbacks: public SailtrackModuleCallbacks {
 		}
 
 		if(pmu->getBatteryPercent()<=20){
-			return 0x00FF0000;
+            return 0x00FF0000;
 		}
 
 		if (pmu->getBatteryPercent()>20 && pmu->getBatteryPercent()<90){
@@ -110,9 +110,8 @@ class ModuleCallbacks: public SailtrackModuleCallbacks {
 		}
 
 		if (pmu->getBatteryPercent()>=90){
-			return 0x00FF00FF;
+            return 0x00FF00FF;
 		}
-
 		return 0x00000000;
 	}
 
@@ -185,6 +184,7 @@ void beginLora() {
     pmu->setPowerChannelVoltage(XPOWERS_ALDO2, 3300);
     pmu->enablePowerOutput(XPOWERS_ALDO2);
     lora.begin(E32_BASE_FREQUENCY_MHZ + E32_CHANNEL, E32_BANDWIDTH_KHZ, E32_SPREADING_FACTOR, E32_CODING_RATE_DENOM);
+
     for (auto metric : loraMetrics) stm.subscribe(metric.topic);
     xTaskCreate(loraTask, "loraTask", STM_TASK_MEDIUM_STACK_SIZE, NULL, STM_TASK_MEDIUM_PRIORITY, NULL);
 }
@@ -193,7 +193,7 @@ void setup() {
     beginPMU();
     stm.begin("radio", IPAddress(192, 168, 42, 101), new ModuleCallbacks());
     beginGPS();
-    // beginLora();
+    beginLora();
 }
 
 void loop() {
