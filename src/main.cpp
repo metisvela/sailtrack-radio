@@ -66,12 +66,12 @@ class ModuleCallbacks: public SailtrackModuleCallbacks {
         JsonObject battery = status.createNestedObject("battery");
         battery["voltage"] = pmu->getBattVoltage() / 1000.;
         battery["percentage"] = pmu->getBatteryPercent();
+        battery["charging"] = pmu->isCharging();
         JsonObject lora = status.createNestedObject("lora");
         lora["bitrate"] = loraSentBytes * 8 * STM_STATUS_PUBLISH_FREQ_HZ / 1000;
         loraSentBytes = 0;
         JsonObject gpsObj = status.createNestedObject("gps");
         gpsObj["ttff"] = ttff;
-        gpsObj["aop"] = gps.getAOPSTATUSstatus();
     }
 
     void onMqttMessage(const char * topic, JsonObjectConst message) {
@@ -91,6 +91,30 @@ class ModuleCallbacks: public SailtrackModuleCallbacks {
             }
         }
     }
+    // RGB LED Managment according to Battery charge
+    uint32_t notificationLed(){
+		if(pmu->isCharging()){
+			return 0x0000FF00;
+		}
+
+		if(pmu->getBatteryPercent()<=20){
+            return 0x00FF0000;
+		}
+
+		if (pmu->getBatteryPercent()>20 && pmu->getBatteryPercent()<90){
+			if(gps.getFixType() >= 3){
+                return 0x000000FF;
+            }else{
+                return 0x00FFFF00;
+            }
+		}
+
+		if (pmu->getBatteryPercent()>=90){
+            return 0x00FF00FF;
+		}
+		return 0x00000000;
+	}
+
 };
 
 void loraTask(void * pvArguments) {
@@ -110,13 +134,11 @@ void loraTask(void * pvArguments) {
         size_t len;
         size_t consumed = 0;
         size_t toConsume = strlen(message);
-        pmu->enablePowerOutput(XPOWERS_ALDO2);
         while (consumed < toConsume) {
             consumed += e32.encode(E32_ADDRESS, message + consumed, packet, &len);
             lora.transmit(packet, len);
             loraSentBytes += len;
         }
-        pmu->disablePowerOutput(XPOWERS_ALDO2);
         vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(LORA_TASK_INTERVAL_MS));
     }
 }
@@ -144,12 +166,9 @@ void beginPMU() {
 }
 
 void beginGPS() {
-    Serial.println("start begin gps");
-    pmu->setPowerChannelVoltage(XPOWERS_ALDO1, 3300);
     pmu->setPowerChannelVoltage(XPOWERS_ALDO3, 3300);
     pmu->setPowerChannelVoltage(XPOWERS_VBACKUP, 3300);
     pmu->enablePowerOutput(XPOWERS_ALDO3);
-    pmu->enablePowerOutput(XPOWERS_ALDO1);
     pmu->enablePowerOutput(XPOWERS_VBACKUP);
     Serial1.begin(GPS_BAUD_RATE, GPS_SERIAL_CONFIG, GPS_RX_PIN, GPS_TX_PIN);
     gps.begin(Serial1);
@@ -165,12 +184,12 @@ void beginLora() {
     pmu->setPowerChannelVoltage(XPOWERS_ALDO2, 3300);
     pmu->enablePowerOutput(XPOWERS_ALDO2);
     lora.begin(E32_BASE_FREQUENCY_MHZ + E32_CHANNEL, E32_BANDWIDTH_KHZ, E32_SPREADING_FACTOR, E32_CODING_RATE_DENOM);
+
     for (auto metric : loraMetrics) stm.subscribe(metric.topic);
     xTaskCreate(loraTask, "loraTask", STM_TASK_MEDIUM_STACK_SIZE, NULL, STM_TASK_MEDIUM_PRIORITY, NULL);
 }
 
 void setup() {
-    Serial.begin(115200);
     beginPMU();
     stm.begin("radio", IPAddress(192, 168, 42, 101), new ModuleCallbacks());
     beginGPS();
